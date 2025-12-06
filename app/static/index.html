@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortified Kanban | Secure Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111827; } 
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        body { background-color: #111827; }
+        
+        .dot-pattern {
+            background-color: #111827;
+            background-image: radial-gradient(#374151 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .neon-hover { transition: all 0.3s ease; }
+        .neon-hover:hover {
+            border-color: #eab308;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.5), inset 0 0 10px rgba(234, 179, 8, 0.1);
+            transform: translateY(-2px);
+            z-index: 10;
+        }
+        input:focus { box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 h-screen font-sans overflow-hidden selection:bg-yellow-500 selection:text-black">
+
+    <div id="auth-screen" class="flex h-full justify-center items-center bg-gray-950 relative">
+        <div class="absolute inset-0 opacity-20 dot-pattern"></div>
+
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96 border border-gray-700 relative z-10 neon-hover">
+            <div class="flex justify-center mb-6">
+                <div class="h-16 w-16 bg-gray-900 rounded-full flex items-center justify-center border border-gray-600 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                    <i class="fas fa-microchip text-3xl text-yellow-500 animate-pulse"></i>
+                </div>
+            </div>
+            <h1 class="text-2xl font-bold mb-2 text-center text-white tracking-wide">Fortified Kanban</h1>
+            
+            <div id="login-container">
+                <p class="text-center text-gray-500 text-sm mb-6">Secure Project Management</p>
+                <form onsubmit="event.preventDefault(); login();">
+                    <div class="mb-4 relative">
+                        <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" id="login-email" placeholder="Email Address" class="w-full bg-gray-900 border border-gray-700 p-3 pl-10 rounded text-gray-200 focus:outline-none focus:border-yellow-500 transition" value="user@example.com">
+                    </div>
+                    <div class="mb-6 relative">
+                        <i class="fas fa-lock absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="password" id="login-password" placeholder="Password" class="w-full bg-gray-900 border border-gray-700 p-3 pl-10 rounded text-gray-200 focus:outline-none focus:border-yellow-500 transition" value="string">
+                    </div>
+                    <button type="submit" class="w-full bg-yellow-600 text-black font-bold p-3 rounded hover:bg-yellow-500 transition shadow-[0_0_15px_rgba(234,179,8,0.4)] transform active:scale-95">LOGIN</button>
+                </form>
+                <div class="mt-4 text-center text-xs text-gray-500">
+                    New Operative? <a href="#" onclick="toggleAuth('register')" class="text-yellow-500 hover:text-yellow-400 hover:underline">Initialize Account</a>
+                </div>
+            </div>
+
+            <div id="register-container" class="hidden">
+                <p class="text-center text-gray-500 text-sm mb-6">Create New Identity</p>
+                <form onsubmit="event.preventDefault(); register();">
+                    <div class="mb-4 relative">
+                        <i class="fas fa-user-plus absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" id="reg-email" placeholder="New Email" class="w-full bg-gray-900 border border-gray-700 p-3 pl-10 rounded text-gray-200 focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                    <div class="mb-6 relative">
+                        <i class="fas fa-key absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="password" id="reg-password" placeholder="Set Password" class="w-full bg-gray-900 border border-gray-700 p-3 pl-10 rounded text-gray-200 focus:outline-none focus:border-yellow-500 transition">
+                    </div>
+                    <button type="submit" class="w-full bg-gray-700 text-white font-bold p-3 rounded hover:bg-gray-600 border border-gray-600 hover:border-yellow-500 transition shadow-lg transform active:scale-95">REGISTER</button>
+                </form>
+                <div class="mt-4 text-center text-xs text-gray-500">
+                    Already Verified? <a href="#" onclick="toggleAuth('login')" class="text-yellow-500 hover:text-yellow-400 hover:underline">Return to Login</a>
+                </div>
+            </div>
+
+            <div id="auth-message" class="text-center text-sm font-mono mt-4 h-4"></div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden h-full flex flex-col bg-gray-900">
+        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center z-10 border-b border-gray-700">
+            <h1 class="text-lg font-bold text-gray-100 flex items-center gap-2 tracking-wide">
+                <i class="fas fa-layer-group text-yellow-500"></i> Workspace
+            </h1>
+            <button onclick="logout()" class="text-gray-400 hover:text-white text-sm hover:underline transition">Logout</button>
+        </header>
+        <div class="flex-1 p-8 overflow-auto">
+            <div class="mb-8">
+                <h2 class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Your Projects</h2>
+                <div class="flex gap-2 max-w-md">
+                    <input type="text" id="new-board-title" placeholder="New Project Name..." class="bg-gray-800 border border-gray-700 text-white p-2 rounded flex-1 focus:border-yellow-500 outline-none">
+                    <button onclick="createBoard()" class="bg-gray-700 border border-gray-600 text-white px-4 py-2 rounded hover:bg-yellow-600 hover:text-black hover:border-yellow-500 transition text-sm font-bold">Create</button>
+                </div>
+            </div>
+            <div id="board-list" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <div id="board-view" class="hidden h-full flex flex-col bg-gray-900">
+        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center z-10 border-b border-gray-700">
+            <div class="flex items-center gap-4">
+                <button onclick="showDashboard()" class="text-gray-400 hover:text-white transition flex items-center gap-1 hover:text-yellow-500"><i class="fas fa-arrow-left"></i> Projects</button>
+                <div class="h-6 w-px bg-gray-700"></div>
+                <h1 id="current-board-title" class="text-lg font-bold text-white tracking-wide">Board Title</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-xs text-green-500 flex items-center gap-2 font-mono"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></span> Online</div>
+            </div>
+        </header>
+        <div class="flex-1 p-6 overflow-x-auto dot-pattern">
+            <div id="columns-container" class="flex h-full gap-6"></div>
+        </div>
+    </div>
+
+    <div id="card-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col border border-gray-700 neon-hover">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-start bg-gray-800 rounded-t-lg">
+                <div>
+                    <h2 id="modal-title" class="text-2xl font-bold text-white tracking-wide">Card Title</h2>
+                    <p id="modal-desc" class="text-gray-400 mt-1 text-sm border-l-2 border-yellow-600 pl-2">No description</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="deleteCard()" class="text-gray-500 hover:text-red-500 transition hover:shadow-[0_0_10px_rgba(239,68,68,0.5)] rounded p-1" title="Delete Card"><i class="fas fa-trash"></i></button>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl transition">&times;</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-900/30">
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-300 mb-3 text-xs uppercase tracking-widest"><i class="fas fa-check-circle mr-2 text-yellow-500"></i>Checklist</h3>
+                    <div id="modal-checklist" class="space-y-2 mb-3"></div>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-checklist-item" placeholder="Add an item..." class="bg-gray-900 border border-gray-600 p-2 rounded flex-1 text-sm text-white focus:border-yellow-500 outline-none">
+                        <button onclick="addChecklistItem()" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm border border-gray-600 transition hover:border-yellow-500 hover:text-yellow-500"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-300 mb-3 text-xs uppercase tracking-widest"><i class="fas fa-paperclip mr-2 text-yellow-500"></i>Attachments</h3>
+                    <div id="modal-attachments" class="grid grid-cols-2 gap-2 mb-3"></div>
+                    <div class="border-2 border-dashed border-gray-600 bg-gray-800/50 p-4 rounded text-center hover:bg-gray-700 hover:border-yellow-500 hover:text-yellow-500 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)] transition cursor-pointer relative group">
+                        <p class="text-sm text-gray-400 group-hover:text-yellow-500"><i class="fas fa-cloud-upload-alt mr-2"></i>Click to upload file</p>
+                        <input type="file" id="file-upload" class="absolute inset-0 opacity-0 cursor-pointer" onchange="uploadFile()">
+                    </div>
+                    <div id="upload-status" class="text-xs mt-2 text-center h-4 font-mono"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = ""; // Relative path to solve CORS/CSP
+        let token = localStorage.getItem("token");
+        let currentBoardId = null;
+        let currentCardId = null;
+        let allCards = []; 
+
+        if (token) { showDashboard(); fetchBoards(); }
+
+        // --- AUTH & UI TOGGLES ---
+        function toggleAuth(view) {
+            const loginContainer = document.getElementById("login-container");
+            const registerContainer = document.getElementById("register-container");
+            const msg = document.getElementById("auth-message");
+            msg.innerText = ""; // Clear messages
+
+            if (view === 'register') {
+                loginContainer.classList.add("hidden");
+                registerContainer.classList.remove("hidden");
+            } else {
+                loginContainer.classList.remove("hidden");
+                registerContainer.classList.add("hidden");
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+            const msg = document.getElementById("auth-message");
+            
+            const formData = new URLSearchParams();
+            formData.append('username', email); formData.append('password', password);
+
+            try {
+                const res = await fetch(`${API_URL}/login`, { method: "POST", headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData });
+                if (res.ok) {
+                    const data = await res.json();
+                    token = data.access_token;
+                    localStorage.setItem("token", token);
+                    showDashboard(); fetchBoards();
+                } else { 
+                    msg.innerText = "ACCESS DENIED: Invalid Credentials";
+                    msg.className = "text-center text-sm font-mono mt-4 h-4 text-red-500 font-bold";
+                }
+            } catch (e) { 
+                msg.innerText = "SYSTEM FAILURE: Connection Refused"; 
+                msg.className = "text-center text-sm font-mono mt-4 h-4 text-red-500";
+            }
+        }
+
+        async function register() {
+            const email = document.getElementById("reg-email").value;
+            const password = document.getElementById("reg-password").value;
+            const msg = document.getElementById("auth-message");
+
+            try {
+                const res = await fetch(`${API_URL}/register`, { 
+                    method: "POST", 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ email: email, password: password }) 
+                });
+                
+                if (res.ok) {
+                    msg.innerText = "IDENTITY CREATED. PLEASE LOGIN.";
+                    msg.className = "text-center text-sm font-mono mt-4 h-4 text-green-500 font-bold animate-pulse";
+                    setTimeout(() => toggleAuth('login'), 2000); // Auto-switch to login
+                } else {
+                    const err = await res.json();
+                    msg.innerText = `ERROR: ${err.detail || "Registration Failed"}`;
+                    msg.className = "text-center text-sm font-mono mt-4 h-4 text-red-500";
+                }
+            } catch (e) {
+                msg.innerText = "SYSTEM FAILURE";
+                msg.className = "text-center text-sm font-mono mt-4 h-4 text-red-500";
+            }
+        }
+
+        function logout() { localStorage.removeItem("token"); location.reload(); }
+
+        // --- DASHBOARD ---
+        function showDashboard() {
+            document.getElementById("auth-screen").classList.add("hidden");
+            document.getElementById("board-view").classList.add("hidden");
+            document.getElementById("dashboard").classList.remove("hidden");
+        }
+
+        async function fetchBoards() {
+            const res = await fetch(`${API_URL}/boards`, { headers: { "Authorization": `Bearer ${token}` } });
+            if (res.status === 401) logout();
+            const boards = await res.json();
+            const container = document.getElementById("board-list");
+            container.innerHTML = "";
+            boards.forEach(board => {
+                const div = document.createElement("div");
+                div.className = "bg-gray-800 p-6 rounded shadow-lg cursor-pointer border border-gray-700 border-l-4 border-l-yellow-600 relative group neon-hover";
+                div.innerHTML = `
+                    <h3 class="font-bold text-lg text-white pr-8 tracking-wide" onclick="openBoard(${board.id}, '${board.title}')">${board.title}</h3>
+                    <p class="text-gray-500 text-xs mt-2 font-mono">ID: ${board.id}</p>
+                    <button onclick="deleteBoard(${board.id})" class="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function createBoard() {
+            const title = document.getElementById("new-board-title").value;
+            if(!title) return;
+            await fetch(`${API_URL}/boards`, { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ title: title }) });
+            document.getElementById("new-board-title").value = "";
+            fetchBoards();
+        }
+
+        async function deleteBoard(id) {
+            if(!confirm("Are you sure? All cards will be lost.")) return;
+            await fetch(`${API_URL}/boards/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+            fetchBoards();
+        }
+
+        // --- BOARD VIEW ---
+        async function openBoard(boardId, title) {
+            currentBoardId = boardId;
+            document.getElementById("dashboard").classList.add("hidden");
+            document.getElementById("board-view").classList.remove("hidden");
+            document.getElementById("current-board-title").innerText = title;
+            fetchBoardData();
+        }
+
+        async function fetchBoardData() {
+            const cardRes = await fetch(`${API_URL}/boards/${currentBoardId}/cards`, { headers: { "Authorization": `Bearer ${token}` } });
+            allCards = await cardRes.json();
+            const colRes = await fetch(`${API_URL}/boards/${currentBoardId}/columns`, { headers: { "Authorization": `Bearer ${token}` } });
+            const columns = await colRes.json();
+            renderBoard(columns);
+        }
+
+        function renderBoard(columns) {
+            const container = document.getElementById("columns-container");
+            container.innerHTML = "";
+            
+            columns.forEach((col) => {
+                const colCards = allCards.filter(c => c.column_id === col.id);
+                const colDiv = document.createElement("div");
+                colDiv.className = "w-80 flex-shrink-0 flex flex-col bg-gray-800/80 rounded-lg border border-gray-700 max-h-full group/col backdrop-blur-sm";
+                colDiv.innerHTML = `
+                    <div class="p-3 font-bold text-gray-400 flex justify-between text-sm items-center border-b border-gray-700 bg-gray-800 rounded-t-lg">
+                        <div class="flex items-center gap-2 tracking-wide uppercase text-xs">
+                            ${col.title} <span class="bg-gray-700 text-gray-300 px-2 rounded-full">${colCards.length}</span>
+                        </div>
+                        <button onclick="deleteColumn(${col.id})" class="text-gray-600 hover:text-red-500 opacity-0 group-hover/col:opacity-100 transition"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="flex-1 p-2 overflow-y-auto space-y-2 min-h-[100px]" id="col-${col.id}" data-col-id="${col.id}">
+                        ${colCards.sort((a,b) => a.position - b.position).map(card => `
+                            <div class="bg-gray-700 p-3 rounded shadow hover:bg-gray-600 cursor-pointer border-l-2 border-transparent hover:border-yellow-500 transition group/card" onclick="openCardModal(${card.id})" data-card-id="${card.id}">
+                                <div class="font-medium text-gray-200">${card.title}</div>
+                                <div class="flex gap-2 mt-2">
+                                    ${card.checklist.length > 0 ? `<span class="text-xs text-gray-400 bg-gray-800 px-1 rounded border border-gray-600"><i class="fas fa-check-square mr-1 text-yellow-500"></i>${card.checklist.filter(i=>i.is_completed).length}/${card.checklist.length}</span>` : ''}
+                                    ${card.attachments.length > 0 ? `<span class="text-xs text-gray-400 bg-gray-800 px-1 rounded border border-gray-600"><i class="fas fa-paperclip mr-1 text-yellow-500"></i>${card.attachments.length}</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="p-3 border-t border-gray-700/50">
+                        <button onclick="addCardPrompt(${col.id})" class="w-full text-gray-500 hover:text-white hover:bg-gray-700 p-2 rounded text-sm text-left transition"><i class="fas fa-plus mr-1"></i> Add Task</button>
+                    </div>
+                `;
+                container.appendChild(colDiv);
+                new Sortable(colDiv.querySelector(`#col-${col.id}`), { group: 'shared', animation: 150, ghostClass: 'bg-yellow-500/20', onEnd: function (evt) { const cardId = evt.item.getAttribute('data-card-id'); const newColId = evt.to.getAttribute('data-col-id'); moveCard(cardId, newColId, evt.newIndex); } });
+            });
+
+            const addColDiv = document.createElement("div");
+            addColDiv.className = "w-80 flex-shrink-0 flex flex-col justify-center items-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-700 hover:border-yellow-500 hover:bg-gray-800/50 cursor-pointer transition p-4 h-32 opacity-70 hover:opacity-100 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]";
+            addColDiv.onclick = addColumnPrompt;
+            addColDiv.innerHTML = `<span class="text-gray-500 font-bold hover:text-white transition uppercase text-xs tracking-widest"><i class="fas fa-plus mr-2"></i>Add Column</span>`;
+            container.appendChild(addColDiv);
+        }
+
+        async function addColumnPrompt() {
+            const title = prompt("Column Name:");
+            if (!title) return;
+            await fetch(`${API_URL}/boards/${currentBoardId}/columns`, { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ title: title }) });
+            fetchBoardData();
+        }
+
+        async function deleteColumn(colId) {
+            if(!confirm("Are you sure? All tasks in this column will be deleted.")) return;
+            await fetch(`${API_URL}/columns/${colId}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+            fetchBoardData();
+        }
+
+        async function addCardPrompt(colId) {
+            const title = prompt("Task Name:");
+            if (!title) return;
+            await fetch(`${API_URL}/cards`, { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ title: title, description: "", column_id: colId, position: 100 }) });
+            fetchBoardData();
+        }
+
+        async function moveCard(cardId, colId, pos) { await fetch(`${API_URL}/cards/${cardId}/move?column_id=${colId}&position=${pos}`, { method: "PATCH", headers: { "Authorization": `Bearer ${token}` } }); }
+
+        // --- MODAL LOGIC ---
+        function openCardModal(cardId) {
+            currentCardId = cardId;
+            const card = allCards.find(c => c.id === cardId);
+            if (!card) return;
+            document.getElementById("card-modal").classList.remove("hidden");
+            document.getElementById("modal-title").innerText = card.title;
+            document.getElementById("modal-desc").innerText = card.description || "No description";
+            renderChecklist(card.checklist); renderAttachments(card.attachments);
+        }
+
+        function closeModal() { document.getElementById("card-modal").classList.add("hidden"); fetchBoardData(); }
+
+        async function deleteCard() {
+            if(!confirm("Delete this card?")) return;
+            await fetch(`${API_URL}/cards/${currentCardId}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+            closeModal();
+        }
+
+        function renderChecklist(items) {
+            const container = document.getElementById("modal-checklist");
+            container.innerHTML = "";
+            items.forEach(item => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-3 p-2 bg-gray-900/50 hover:bg-gray-700/50 rounded border border-transparent hover:border-yellow-500/50 group transition">
+                        <input type="checkbox" ${item.is_completed ? 'checked' : ''} onchange="toggleChecklist(${item.id}, this.checked)" class="w-4 h-4 rounded bg-gray-700 border-gray-500 checked:bg-yellow-500 checked:border-yellow-500 focus:ring-offset-gray-900">
+                        <span class="flex-1 text-sm ${item.is_completed ? 'line-through text-gray-500' : 'text-gray-300'} font-mono">${item.content}</span>
+                        <button onclick="deleteChecklistItem(${item.id})" class="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        async function addChecklistItem() {
+            const input = document.getElementById("new-checklist-item");
+            if (!input.value) return;
+            const res = await fetch(`${API_URL}/cards/${currentCardId}/checklist`, { method: "POST", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ content: input.value }) });
+            if (res.ok) { const newItem = await res.json(); allCards.find(c => c.id === currentCardId).checklist.push(newItem); renderChecklist(allCards.find(c => c.id === currentCardId).checklist); input.value = ""; }
+        }
+
+        async function toggleChecklist(itemId, isChecked) {
+            await fetch(`${API_URL}/checklist/${itemId}`, { method: "PATCH", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ is_completed: isChecked }) });
+            const item = allCards.find(c => c.id === currentCardId).checklist.find(i => i.id === itemId); item.is_completed = isChecked; renderChecklist(allCards.find(c => c.id === currentCardId).checklist);
+        }
+
+        async function deleteChecklistItem(itemId) {
+            await fetch(`${API_URL}/checklist/${itemId}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+            const card = allCards.find(c => c.id === currentCardId);
+            card.checklist = card.checklist.filter(i => i.id !== itemId);
+            renderChecklist(card.checklist);
+        }
+
+        function renderAttachments(files) {
+            const container = document.getElementById("modal-attachments");
+            container.innerHTML = "";
+            files.forEach(file => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 bg-gray-900 p-2 rounded text-sm overflow-hidden group border border-gray-700 hover:border-yellow-500 transition shadow hover:shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                        <i class="fas fa-file-code text-yellow-500"></i>
+                        <a href="${API_URL}/attachments/${file.id}" class="truncate flex-1 text-gray-300 hover:text-yellow-400 hover:underline font-mono" target="_blank">${file.filename}</a>
+                        <button onclick="deleteAttachment(${file.id})" class="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById("file-upload");
+            const file = fileInput.files[0];
+            if (!file) return;
+            const status = document.getElementById("upload-status");
+            status.innerText = "Scanning file (YARA)..."; status.className = "text-xs mt-2 text-center text-blue-400 animate-pulse";
+            const formData = new FormData(); formData.append("file", file);
+            const res = await fetch(`${API_URL}/cards/${currentCardId}/attachments`, { method: "POST", headers: { "Authorization": `Bearer ${token}` }, body: formData });
+            if (res.ok) {
+                const newFile = await res.json(); allCards.find(c => c.id === currentCardId).attachments.push(newFile); renderAttachments(allCards.find(c => c.id === currentCardId).attachments); status.innerText = "File verified & secure"; status.className = "text-xs mt-2 text-center text-green-500 font-bold";
+            } else { const err = await res.json(); status.innerText = `Malware Detected: ${err.detail}`; status.className = "text-xs mt-2 text-center text-red-500 font-bold"; }
+        }
+
+        async function deleteAttachment(attId) {
+            if(!confirm("Delete file?")) return;
+            await fetch(`${API_URL}/attachments/${attId}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+            const card = allCards.find(c => c.id === currentCardId);
+            card.attachments = card.attachments.filter(a => a.id !== attId);
+            renderAttachments(card.attachments);
+        }
+    </script>
+</body>
+</html>

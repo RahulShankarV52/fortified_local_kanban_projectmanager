@@ -1,0 +1,21 @@
+# 1. Security (CRITICAL)
+.env
+# Never upload .env. It contains your Database Password and Encryption Key.
+# If you upload this, your "Secure" project is instantly insecure.
+
+# 2. Python Environment & Bytecode
+venv/
+__pycache__/
+*.pyc
+
+# 3. Docker Database Data (Heavy)
+postgres_data/
+# This folder contains the actual database files. It is huge and specific to your machine.
+
+# 4. User Uploads
+uploads/
+# We don't want to upload your test "virus.txt" or "evidence.txt" to GitHub.
+
+# 5. IDE Settings (Optional)
+.vscode/
+.idea/

@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+pydantic-settings
+python-dotenv
+passlib[argon2]
+python-jose[cryptography]
+python-multipart
+aiofiles
+yara-python
+pefile
+slowapi
+email-validator
